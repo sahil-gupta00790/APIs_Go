@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"Apis_go.sahil.net/internal/data" // Replace "your-package-path" with the actual package path
+	"Apis_go.sahil.net/internal/validator"
 )
 
 func (app *application) createSchoolHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,6 +27,26 @@ func (app *application) createSchoolHandler(w http.ResponseWriter, r *http.Reque
 		app.badRequestResponse(w, r, err)
 		return
 	}
+	//copy the values of input strcut to a new school struct
+	school := &data.School{
+		Name:    input.Name,
+		Level:   input.Level,
+		Contact: input.Website,
+		Phone:   input.Phone,
+		Email:   input.Email,
+		Website: input.Website,
+		Address: input.Address,
+		Mode:    input.Mode,
+	}
+	//initialize a new Validator instance
+	v := validator.New()
+
+	//check the map to detertmine if any validation error
+	if data.ValidateSchool(v, school); !v.Valid() {
+		app.failedValidation(w, r, v.Errors)
+		return
+	}
+	//Display the request
 	fmt.Fprintf(w, "%+v\n", input)
 }
 

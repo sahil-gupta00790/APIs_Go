@@ -46,8 +46,20 @@ func (app *application) createSchoolHandler(w http.ResponseWriter, r *http.Reque
 		app.failedValidation(w, r, v.Errors)
 		return
 	}
-	//Display the request
-	fmt.Fprintf(w, "%+v\n", input)
+	//create a school
+	err = app.models.Schools.Insert(school)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+	//Create a location header for the newely created resource
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("/v1/schools/%d", school.ID))
+	//Write the JSON Responsewith 201
+	err = app.writeJson(w, http.StatusCreated, envelope{"school": school}, headers)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
 }
 
 func (app *application) showSchoolHandler(w http.ResponseWriter, r *http.Request) {

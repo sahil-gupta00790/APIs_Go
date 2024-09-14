@@ -153,3 +153,27 @@ func (app *application) updateSchoolhandler(w http.ResponseWriter, r *http.Reque
 	}
 
 }
+
+func (app *application) deleteSchoolHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIdParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+	//delete the school from the db
+	//ssend 404 if not found
+	err = app.models.Schools.Delete(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+	}
+	//return a 200 status ok with a success message
+	err = app.writeJson(w, http.StatusOK, envelope{"message": "school successfully deleted"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

@@ -173,7 +173,13 @@ func (app *application) updateSchoolhandler(w http.ResponseWriter, r *http.Reque
 	//Pass the updated school record to update emthod
 	err = app.models.Schools.Update(school)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflig):
+			app.editConflictValidation(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+
+		}
 	}
 	err = app.writeJson(w, http.StatusOK, envelope{"school": school}, nil)
 	if err != nil {

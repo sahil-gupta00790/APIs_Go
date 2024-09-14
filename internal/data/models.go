@@ -7,6 +7,7 @@ import (
 
 var (
 	ErrRecordNotFound = errors.New("record not found")
+	ErrEditConflig    = errors.New("edit conflict")
 )
 
 // a wrapper for data models

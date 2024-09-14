@@ -22,7 +22,10 @@ type config struct {
 	port int
 	env  string //dev , staging , produciton , etc.
 	db   struct {
-		dsn string
+		dsn          string
+		maxOpenConns int
+		maxIdleConns int
+		maxIdleTime  string
 	}
 }
 
@@ -37,11 +40,15 @@ func main() {
 	//read in flags that are needed to populate our config
 	flag.IntVar(&cfg.port, "port", 4000, "API SERVER PORT")
 	flag.StringVar(&cfg.env, "env", "development", "Environment(development | staging | produciton)")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://postgres:WintheW0rld@localhost:5432/apis_go", "postgresql dsn")
+	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgresQL max open connections")
+	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgresQL max idle connections")
+	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgresQL max idle time")
 
 	flag.Parse()
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
-	db, err := openDb()
+	db, err := openDb(cfg)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -51,7 +58,7 @@ func main() {
 
 	// Ping the database to check if the connection is established
 
-	fmt.Println("Connected to PostgreSQL database!")
+	logger.Println("Connected to PostgreSQL database!")
 
 	//createing an instance of appn struct
 	app := &application{
@@ -75,12 +82,19 @@ func main() {
 	logger.Fatal(err)
 }
 
-func openDb() (*sql.DB, error) {
-	connStr := "postgres://postgres:WintheW0rld@localhost:5432/apis_go"
-	db, err := sql.Open("pgx", connStr)
+func openDb(cfg config) (*sql.DB, error) {
+	//connStr := "postgres://postgres:WintheW0rld@localhost:5432/apis_go"
+	db, err := sql.Open("pgx", cfg.db.dsn)
 	if err != nil {
 		return nil, err
 	}
+	db.SetMaxOpenConns(cfg.db.maxOpenConns)
+	db.SetMaxIdleConns(cfg.db.maxIdleConns)
+	duration, err := time.ParseDuration(cfg.db.maxIdleTime)
+	if err != nil {
+		return nil, err
+	}
+	db.SetConnMaxIdleTime(duration)
 	//create a context with a 5 second tiemout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

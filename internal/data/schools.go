@@ -14,7 +14,7 @@ type School struct {
 	CreatedAt time.Time `json:"-"`
 	Name      string    `json:"name"`
 	Level     string    `json:"level"`
-	Contact   string    `json:"contract"`
+	Contact   string    `json:"contact"`
 	Phone     string    `json:"phone"`
 	Email     string    `json:"email,omitempty"`
 	Website   string    `json:"website,omitempty"`

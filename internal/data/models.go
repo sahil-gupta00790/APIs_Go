@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrRecordNotFounf = errors.New("record not found")
+	ErrRecordNotFound = errors.New("record not found")
 )
 
 // a wrapper for data models

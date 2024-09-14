@@ -2,9 +2,11 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"Apis_go.sahil.net/internal/validator"
+	"github.com/lib/pq"
 )
 
 type School struct {
@@ -68,12 +70,52 @@ func (m SchoolModel) Insert(school *School) error {
 
 // Get() alows to retriece a specific school
 func (m SchoolModel) Get(id int64) (*School, error) {
-	return nil, nil
+	//Ensure the valid id
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+	//create the query
+	query :=
+		`SELECT id,created_at,name,level,contact,phone,email,website,address,mode,version
+	FROM schools
+	WHERE id=$1
+	`
+	//declare a school var. to hold the returned data
+	var school School
+	//execute the query using queryROw
+	err := m.DB.QueryRow(query, id).Scan(&school.ID, &school.CreatedAt, &school.Name, &school.Level, &school.Contact, &school.Phone, &school.Email, &school.Website, &school.Address, pq.Array(&school.Mode), &school.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+	//success
+	return &school, nil
 }
 
 // Update() allows us to edit/alter a specific school
 func (m SchoolModel) Update(school *School) error {
-	return nil
+	//Create a query for new updated school data
+	query := `
+	UPDATE schools
+	SET name=$1 , level=$2,contact=$3,phone=$4,email=$5,website=$6,address=$7,mode=$8,version=version+1
+	WHERE id=$9
+	RETURNING version`
+	args := []interface{}{
+		school.Name,
+		school.Level,
+		school.Contact,
+		school.Phone,
+		school.Email,
+		school.Website,
+		school.Address,
+		pq.Array(school.Mode),
+		school.ID,
+	}
+	return m.DB.QueryRow(query, args...).Scan(&school.Version)
 }
 
 // Delete() removes a specific school

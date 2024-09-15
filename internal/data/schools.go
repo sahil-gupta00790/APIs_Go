@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -63,9 +64,13 @@ func (m SchoolModel) Insert(school *School) error {
 	query := `INSERT INTO schools (name,level,contact,phone,email,website,address,mode)
 	VALUES( $1,$2,$3,$4,$5,$6,$7,$8)
 	RETURNING id,created_at,version`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	//cleanup to prevent memroy leaks
+	defer cancel()
+
 	//collect the data fields into a slice
 	args := []interface{}{school.Name, school.Level, school.Contact, school.Phone, school.Email, school.Website, school.Address, school.Mode}
-	return m.DB.QueryRow(query, args...).Scan(&school.ID, &school.CreatedAt, &school.Version)
+	return m.DB.QueryRowContext(ctx, query, args...).Scan(&school.ID, &school.CreatedAt, &school.Version)
 }
 
 // Get() alows to retriece a specific school
@@ -82,8 +87,15 @@ func (m SchoolModel) Get(id int64) (*School, error) {
 	`
 	//declare a school var. to hold the returned data
 	var school School
+	//create a context
+	//time is started here
+	//so if no open connection m, the qeury time is not calcualted but the time it waits for open connection of db is also counted
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	//cleanup to prevent memroy leaks
+	defer cancel()
+
 	//execute the query using queryROw
-	err := m.DB.QueryRow(query, id).Scan(&school.ID, &school.CreatedAt, &school.Name, &school.Level, &school.Contact, &school.Phone, &school.Email, &school.Website, &school.Address, pq.Array(&school.Mode), &school.Version)
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(&school.ID, &school.CreatedAt, &school.Name, &school.Level, &school.Contact, &school.Phone, &school.Email, &school.Website, &school.Address, pq.Array(&school.Mode), &school.Version)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -110,6 +122,10 @@ func (m SchoolModel) Update(school *School) error {
 	WHERE id=$9
 	AND version = $10
 	RETURNING version`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	//cleanup to prevent memroy leaks
+	defer cancel()
+
 	args := []interface{}{
 		school.Name,
 		school.Level,
@@ -123,7 +139,7 @@ func (m SchoolModel) Update(school *School) error {
 		school.Version,
 	}
 	//check for edit conflicts
-	err := m.DB.QueryRow(query, args...).Scan(&school.Version)
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&school.Version)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -146,8 +162,12 @@ func (m SchoolModel) Delete(id int64) error {
 	query := `
 	DELETE FROM schools
 	WHERE id=$1`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	//cleanup to prevent memroy leaks
+	defer cancel()
+
 	//execute the quret
-	result, err := m.DB.Exec(query, id)
+	result, err := m.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
+	"Apis_go.sahil.net/internal/validator"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -93,4 +95,43 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 		return errors.New("body must contain a single JSON value")
 	}
 	return nil
+}
+
+// readstring()-method returns a string value from a querry parameters string or it returns a default value if no mathcing key is found
+func (app *application) readstring(qs url.Values, key string, defaultValue string) string {
+	//get the value
+	value := qs.Get(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+
+}
+
+// The readCSV() method splits a value into a slice based on the comma seprator
+// IF no matching key is found then the default value is returned.
+func (app *application) readCSV(qs url.Values, key string, defaultValue []string) []string {
+	value := qs.Get(key)
+	if value == "" {
+		return defaultValue
+	}
+	//split the string based on comma
+	return strings.Split(value, ",")
+}
+
+// readINT() method convcerts a string value from query to an integer
+// if value cannot be converted to interger , then validation error is added to validation map errors
+func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	//get the value
+	value := qs.Get(key)
+	if value == "" {
+		return defaultValue
+	}
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		v.AddError(key, "must be an integer value")
+		return defaultValue
+	}
+	return intValue
+
 }

@@ -51,7 +51,7 @@ func ValidWebsite(website string) bool {
 
 // Adderror() adds an entry error to the Errors map
 func (v *Validator) AddError(key, message string) {
-	if _, exists := v.Errors[key]; exists {
+	if _, exists := v.Errors[key]; !exists {
 		v.Errors[key] = message
 	}
 }

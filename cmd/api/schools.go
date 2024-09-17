@@ -239,7 +239,17 @@ func (app *application) listSchoolsHandler(w http.ResponseWriter, r *http.Reques
 		app.failedValidation(w, r, v.Errors)
 		return
 	}
-	//result
-	fmt.Fprintf(w, "%+v\n", input)
+	//getting a list of all schools
+	schools, err := app.models.Schools.GetAll(input.Name, input.Level, input.Mode, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	//send a json response
+	err = app.writeJson(w, http.StatusOK, envelope{"schools": schools}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 
 }

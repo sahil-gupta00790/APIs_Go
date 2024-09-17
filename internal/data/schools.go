@@ -189,13 +189,11 @@ func (m SchoolModel) Delete(id int64) error {
 
 func (m SchoolModel) GetAll(name string, level string, mode []string, filters Filters) ([]*School, error) {
 	//construct the query
-	query := `SELECT id,created_at,name,level,contact,phone,email,website,address,mode,version
+	query := `SELECT id,created_at,name,level,contact,phone,email,website,address,mode,version 
 	FROM schools
-	WHERE(LOWER(name)=LOWER($1) OR $1 = '')
-	AND (LOWER(level)=LOWER($2) OR $2 = '')
-	AND (mode @> $3 OR $3 = '{}')
-
-
+	WHERE(to_tsvector('simple',name) @@ plainto_tsquery('simple',$1) OR $1 = '')
+	AND (to_tsvector('simple',level) @@ plainto_tsquery('simple' , $2) OR $2 = '')
+	AND (mode @> $3 OR $3 = '{}') 
 	ORDER BY id`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
